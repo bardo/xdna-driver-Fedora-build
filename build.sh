@@ -1,6 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+    echo "Usage: $0 [-h] [-n]"
+    echo "Options:"
+    echo "  -h: print usage information"
+    echo "  -n: do not use Podman's cache (fetch latest git revision)"
+}
+
+cache=""
+while getopts "hn" opt ; do
+    case $opt in
+        h) usage ; exit 0 ;;
+        n) cache="--no-cache" ;;
+        \?) echo "Invalid option: -$OPTARG" usage ; exit 1 ;;
+    esac
+done
+
+shift $(( OPTIND -1 ))
+
+[[ $# -ne 0 ]] && ( usage ; exit 1 )
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dockerfile="${script_dir}/xdna-driver.Dockerfile"
 artifact_dir="${script_dir}/build"
@@ -19,7 +39,7 @@ fi
 mkdir -p "${artifact_dir}"
 rm -f "${artifact_dir}"/*.rpm
 
-podman build --file "${dockerfile}" --tag "${image_tag}" "${script_dir}"
+podman build $cache --file "${dockerfile}" --tag "${image_tag}" "${script_dir}"
 
 container_id="$(podman create "${image_tag}")"
 cleanup() {
